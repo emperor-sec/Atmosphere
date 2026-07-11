@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atmosphere</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
+  <link rel="stylesheet" href="/static/css/style.css?v=6">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <div class="AppShell">
+
+    <div class="Sidebar-Backdrop" id="SidebarBackdrop"></div>
+
+    <aside class="Sidebar" id="SidebarElement">
+      <div class="Sidebar-Header">
+        <div class="Sidebar-Brand">
+          <img src="/static/img/logo.svg" alt="Atmosphere" class="Sidebar-Logo">
+          <span class="Sidebar-BrandText">Atmosphere</span>
+        </div>
+        <button class="IconButton" id="SidebarCollapseButton">
+          <i class="fa-solid fa-angles-left"></i>
+        </button>
+      </div>
+
+      <nav class="Sidebar-Nav">
+        <button class="NavItem is-active" data-view="SelfScan">
+          <i class="fa-solid fa-user-shield"></i>
+          <span class="NavItem-Label">Self Scan</span>
+        </button>
+        <button class="NavItem" data-view="IpLookup">
+          <i class="fa-solid fa-magnifying-glass-location"></i>
+          <span class="NavItem-Label">IP Lookup</span>
+        </button>
+        <button class="NavItem" data-view="BatchLookup">
+          <i class="fa-solid fa-layer-group"></i>
+          <span class="NavItem-Label">Batch Lookup</span>
+        </button>
+        <button class="NavItem" data-view="DnsTools">
+          <i class="fa-solid fa-server"></i>
+          <span class="NavItem-Label">DNS Tools</span>
+        </button>
+        <button class="NavItem" data-view="About">
+          <i class="fa-solid fa-circle-info"></i>
+          <span class="NavItem-Label">About</span>
+        </button>
+      </nav>
+
+    </aside>
+
+    <div class="MainArea">
+
+      <header class="TopBar">
+        <button class="IconButton" id="SidebarOpenButton">
+          <i class="fa-solid fa-angles-right"></i>
+        </button>
+        <span class="TopBar-Title" id="TopBarTitle">Self Scan</span>
+      </header>
+
+      <main class="Container">
+
+        <div class="EthicsBanner">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Information is derived from standard HTTP headers, public browser APIs, and third-party IP geolocation providers. No personal data is stored or exfiltrated. Use only for education and lawful security research.</span>
+        </div>
+
+        <section id="SelfScanView" class="ViewPanel is-active">
+          <div id="SelfScanLoading" class="LoadingState">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Collecting device information...</span>
+          </div>
+          <div id="SelfScanContent" style="display: none;"></div>
+        </section>
+
+        <section id="IpLookupView" class="ViewPanel">
+          <form id="LookupForm" class="LookupForm">
+            <input type="text" id="LookupInput" class="LookupForm-Input" placeholder="Enter an IP address, e.g. 8.8.8.8" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Lookup</button>
+          </form>
+          <div id="LookupLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Resolving IP data...</span>
+          </div>
+          <div id="LookupError" class="ErrorState" style="display: none;"></div>
+          <div id="LookupContent"></div>
+        </section>
+
+        <section id="BatchLookupView" class="ViewPanel">
+          <form id="BatchForm" class="BatchForm">
+            <textarea id="BatchInput" class="BatchForm-Textarea" placeholder="Enter up to 20 IP addresses, one per line" rows="5"></textarea>
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Run Batch Lookup</button>
+          </form>
+          <div id="BatchLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Resolving batch entries...</span>
+          </div>
+          <div id="BatchError" class="ErrorState" style="display: none;"></div>
+          <div id="BatchContent"></div>
+        </section>
+
+        <section id="DnsToolsView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-arrow-right-arrow-left"></i> Forward DNS Resolution</div>
+          <form id="DnsForm" class="LookupForm">
+            <input type="text" id="DnsInput" class="LookupForm-Input" placeholder="Enter a hostname, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Resolve</button>
+          </form>
+          <div id="DnsLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Resolving hostname...</span>
+          </div>
+          <div id="DnsError" class="ErrorState" style="display: none;"></div>
+          <div id="DnsContent"></div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-rotate"></i> Reverse DNS Lookup</div>
+          <form id="ReverseDnsForm" class="LookupForm">
+            <input type="text" id="ReverseDnsInput" class="LookupForm-Input" placeholder="Enter an IP address, e.g. 1.1.1.1" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Resolve</button>
+          </form>
+          <div id="ReverseDnsLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Resolving PTR record...</span>
+          </div>
+          <div id="ReverseDnsError" class="ErrorState" style="display: none;"></div>
+          <div id="ReverseDnsContent"></div>
+        </section>
+
+        <section id="AboutView" class="ViewPanel">
+          <div class="AboutCard">
+            <div class="AboutCard-Logo"><i class="fa-solid fa-satellite-dish"></i></div>
+            <h1 class="AboutCard-Title">Atmosphere</h1>
+            <p class="AboutCard-Tagline">An ethical OSINT reconnaissance panel for IP geolocation and device fingerprinting.</p>
+          </div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-book"></i> Overview</div>
+          <p class="AboutText">
+            Atmosphere is a lightweight, self-hosted OSINT panel written in Go. It provides self-scan diagnostics,
+            manual and batch IP geolocation lookup with automatic provider fallback, and DNS/reverse DNS resolution.
+            It is designed for security awareness demonstrations, infrastructure reconnaissance training, and
+            personal network diagnostics.
+          </p>
+
+          <div class="SectionLabel"><i class="fa-solid fa-list-check"></i> Capabilities</div>
+          <table class="DataTable">
+            <tr><td>Self Scan</td><td>Public IP, local IP discovery, browser, OS, device type, client hints</td></tr>
+            <tr><td>IP Lookup</td><td>Manual geolocation lookup with Google Maps and OpenStreetMap links</td></tr>
+            <tr><td>Batch Lookup</td><td>Up to 20 IP addresses resolved in a single request</td></tr>
+            <tr><td>DNS Tools</td><td>Forward hostname resolution and reverse PTR lookup</td></tr>
+            <tr><td>Geolocation Fallback</td><td>Automatically tries multiple providers for higher accuracy</td></tr>
+          </table>
+
+          <div class="SectionLabel"><i class="fa-solid fa-scale-balanced"></i> Ethical Use</div>
+          <p class="AboutText">
+            Atmosphere does not collect data from third parties without their knowledge. Every lookup in this panel
+            operates only on the visitor's own connection or on an IP, hostname, or address the operator explicitly
+            enters. There is no tracking-link or covert-capture mechanism. Use this tool only on systems you are
+            authorized to test.
+          </p>
+
+          <div class="SectionLabel"><i class="fa-solid fa-user-shield"></i> Author</div>
+          <table class="DataTable">
+            <tr><td>Developed By</td><td>MatrixTM26</td></tr>
+            <tr><td>Organization</td><td>Emperor Security Research</td></tr>
+            <tr><td>Focus Area</td><td>Offensive Security &amp; Red Teaming</td></tr>
+          </table>
+        </section>
+
+      </main>
+
+      <footer class="Footer">
+        Atmosphere &middot; Built for ethical OSINT research &middot; MatrixTM26 / Emperor Security Research
+      </footer>
+
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=6"></script>
+</body>
+</html>
