@@ -226,6 +226,10 @@ body {
   background-color: var(--Bg-Default);
 }
 
+#SidebarOpenButton {
+  display: none;
+}
+
 .TopBar-Title {
   font-weight: 600;
   font-size: 14.5px;
@@ -715,6 +719,10 @@ body {
 }
 
 @media (max-width: 800px) {
+  #SidebarOpenButton {
+    display: inline-flex;
+  }
+
   .Sidebar {
     position: fixed;
     top: 0;
