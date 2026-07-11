@@ -19,8 +19,11 @@ func main() {
 	GeoService := service.NewGeoLocateService()
 	UserAgentService := service.NewUserAgentService()
 	DnsService := service.NewDnsResolveService()
+	SslCheckService := service.NewSslCheckService()
+	WhoisService := service.NewWhoisService()
+	HeaderInspectService := service.NewHeaderInspectService()
 
-	ApiHandlerInstance := handler.NewApiHandler(GeoService, UserAgentService, DnsService)
+	ApiHandlerInstance := handler.NewApiHandler(GeoService, UserAgentService, DnsService, SslCheckService, WhoisService, HeaderInspectService)
 
 	PageHandlerInstance, TemplateError := handler.NewPageHandler("web/templates/index.html")
 	if TemplateError != nil {
@@ -35,6 +38,11 @@ func main() {
 	Router.HandleFunc("/api/dns-resolve", ApiHandlerInstance.HandleDnsResolve)
 	Router.HandleFunc("/api/reverse-dns", ApiHandlerInstance.HandleReverseDns)
 	Router.HandleFunc("/api/port-check", ApiHandlerInstance.HandlePortCheck)
+	Router.HandleFunc("/api/ssl-check", ApiHandlerInstance.HandleSslCheck)
+	Router.HandleFunc("/api/whois", ApiHandlerInstance.HandleWhoisLookup)
+	Router.HandleFunc("/api/header-inspect", ApiHandlerInstance.HandleHeaderInspect)
+	Router.HandleFunc("/api/dns-records", ApiHandlerInstance.HandleDnsRecords)
+	Router.HandleFunc("/api/ping", ApiHandlerInstance.HandlePing)
 
 	StaticFileServer := http.FileServer(http.Dir("web/static"))
 	Router.Handle("/static/", middleware.NoCacheStatic(http.StripPrefix("/static/", StaticFileServer)))

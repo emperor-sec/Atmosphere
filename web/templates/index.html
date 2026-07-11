@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Atmosphere</title>
   <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-  <link rel="stylesheet" href="/static/css/style.css?v=6">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 
@@ -41,6 +43,22 @@
         <button class="NavItem" data-view="DnsTools">
           <i class="fa-solid fa-server"></i>
           <span class="NavItem-Label">DNS Tools</span>
+        </button>
+        <button class="NavItem" data-view="SslCheck">
+          <i class="fa-solid fa-lock"></i>
+          <span class="NavItem-Label">SSL Certificate</span>
+        </button>
+        <button class="NavItem" data-view="WhoisLookup">
+          <i class="fa-solid fa-id-card"></i>
+          <span class="NavItem-Label">Whois Lookup</span>
+        </button>
+        <button class="NavItem" data-view="HeaderInspect">
+          <i class="fa-solid fa-list-ul"></i>
+          <span class="NavItem-Label">Header Inspector</span>
+        </button>
+        <button class="NavItem" data-view="NetworkTools">
+          <i class="fa-solid fa-tower-broadcast"></i>
+          <span class="NavItem-Label">Network Tools</span>
         </button>
         <button class="NavItem" data-view="About">
           <i class="fa-solid fa-circle-info"></i>
@@ -124,11 +142,91 @@
           </div>
           <div id="ReverseDnsError" class="ErrorState" style="display: none;"></div>
           <div id="ReverseDnsContent"></div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-database"></i> Full DNS Records</div>
+          <form id="DnsRecordsForm" class="LookupForm">
+            <input type="text" id="DnsRecordsInput" class="LookupForm-Input" placeholder="Enter a hostname, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Lookup Records</button>
+          </form>
+          <div id="DnsRecordsLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Querying A, AAAA, MX, TXT, NS, CNAME records...</span>
+          </div>
+          <div id="DnsRecordsError" class="ErrorState" style="display: none;"></div>
+          <div id="DnsRecordsContent"></div>
+        </section>
+
+        <section id="SslCheckView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-lock"></i> SSL Certificate Check</div>
+          <form id="SslCheckForm" class="LookupForm">
+            <input type="text" id="SslCheckInput" class="LookupForm-Input" placeholder="Enter a hostname, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Check Certificate</button>
+          </form>
+          <div id="SslCheckLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Retrieving certificate chain...</span>
+          </div>
+          <div id="SslCheckError" class="ErrorState" style="display: none;"></div>
+          <div id="SslCheckContent"></div>
+        </section>
+
+        <section id="WhoisLookupView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-id-card"></i> Whois Lookup</div>
+          <form id="WhoisForm" class="LookupForm">
+            <input type="text" id="WhoisInput" class="LookupForm-Input" placeholder="Enter a domain, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Lookup Whois</button>
+          </form>
+          <div id="WhoisLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Querying whois registry...</span>
+          </div>
+          <div id="WhoisError" class="ErrorState" style="display: none;"></div>
+          <div id="WhoisContent"></div>
+        </section>
+
+        <section id="HeaderInspectView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-list-ul"></i> HTTP Header Inspector</div>
+          <form id="HeaderInspectForm" class="LookupForm">
+            <input type="text" id="HeaderInspectInput" class="LookupForm-Input" placeholder="Enter a URL, e.g. https://example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Inspect Headers</button>
+          </form>
+          <div id="HeaderInspectLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Fetching response headers...</span>
+          </div>
+          <div id="HeaderInspectError" class="ErrorState" style="display: none;"></div>
+          <div id="HeaderInspectContent"></div>
+        </section>
+
+        <section id="NetworkToolsView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-ethernet"></i> Port Scan</div>
+          <form id="PortCheckForm" class="LookupForm">
+            <input type="text" id="PortCheckInput" class="LookupForm-Input" placeholder="Enter a hostname or IP, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Scan Common Ports</button>
+          </form>
+          <div id="PortCheckLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Probing common ports...</span>
+          </div>
+          <div id="PortCheckError" class="ErrorState" style="display: none;"></div>
+          <div id="PortCheckContent"></div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-signal"></i> Ping / Latency Check</div>
+          <form id="PingForm" class="LookupForm">
+            <input type="text" id="PingInput" class="LookupForm-Input" placeholder="Enter a hostname or IP, e.g. 1.1.1.1" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Run Ping</button>
+          </form>
+          <div id="PingLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Measuring round-trip latency...</span>
+          </div>
+          <div id="PingError" class="ErrorState" style="display: none;"></div>
+          <div id="PingContent"></div>
         </section>
 
         <section id="AboutView" class="ViewPanel">
           <div class="AboutCard">
-            <div class="AboutCard-Logo"><i class="fa-solid fa-satellite-dish"></i></div>
+            <img src="/static/img/logo.svg" alt="Atmosphere" class="AboutCard-Logo">
             <h1 class="AboutCard-Title">Atmosphere</h1>
             <p class="AboutCard-Tagline">An ethical OSINT reconnaissance panel for IP geolocation and device fingerprinting.</p>
           </div>
@@ -136,7 +234,8 @@
           <div class="SectionLabel"><i class="fa-solid fa-book"></i> Overview</div>
           <p class="AboutText">
             Atmosphere is a lightweight, self-hosted OSINT panel written in Go. It provides self-scan diagnostics,
-            manual and batch IP geolocation lookup with automatic provider fallback, and DNS/reverse DNS resolution.
+            manual and batch IP geolocation lookup with automatic provider fallback, DNS/reverse DNS resolution,
+            SSL certificate inspection, whois lookup, HTTP header inspection, port scanning, and latency checks.
             It is designed for security awareness demonstrations, infrastructure reconnaissance training, and
             personal network diagnostics.
           </p>
@@ -146,14 +245,18 @@
             <tr><td>Self Scan</td><td>Public IP, local IP discovery, browser, OS, device type, client hints</td></tr>
             <tr><td>IP Lookup</td><td>Manual geolocation lookup with Google Maps and OpenStreetMap links</td></tr>
             <tr><td>Batch Lookup</td><td>Up to 20 IP addresses resolved in a single request</td></tr>
-            <tr><td>DNS Tools</td><td>Forward hostname resolution and reverse PTR lookup</td></tr>
+            <tr><td>DNS Tools</td><td>Forward resolution, reverse PTR lookup, and full record set (A, AAAA, MX, TXT, NS, CNAME)</td></tr>
+            <tr><td>SSL Certificate</td><td>Certificate chain, expiry, issuer, TLS version, and cipher suite</td></tr>
+            <tr><td>Whois Lookup</td><td>Raw registry whois record with automatic referral follow-up</td></tr>
+            <tr><td>Header Inspector</td><td>Response headers, status, timing, and security header flags</td></tr>
+            <tr><td>Network Tools</td><td>Common port scan and TCP-based latency check</td></tr>
             <tr><td>Geolocation Fallback</td><td>Automatically tries multiple providers for higher accuracy</td></tr>
           </table>
 
           <div class="SectionLabel"><i class="fa-solid fa-scale-balanced"></i> Ethical Use</div>
           <p class="AboutText">
             Atmosphere does not collect data from third parties without their knowledge. Every lookup in this panel
-            operates only on the visitor's own connection or on an IP, hostname, or address the operator explicitly
+            operates only on the visitor's own connection or on an IP, hostname, domain, or URL the operator explicitly
             enters. There is no tracking-link or covert-capture mechanism. Use this tool only on systems you are
             authorized to test.
           </p>
@@ -175,6 +278,6 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=6"></script>
+  <script src="/static/js/app.js?v=9"></script>
 </body>
 </html>

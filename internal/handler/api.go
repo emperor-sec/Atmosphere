@@ -12,16 +12,29 @@ import (
 )
 
 type ApiHandler struct {
-	GeoService       *service.GeoLocateService
-	UserAgentService *service.UserAgentService
-	DnsService       *service.DnsResolveService
+	GeoService           *service.GeoLocateService
+	UserAgentService     *service.UserAgentService
+	DnsService           *service.DnsResolveService
+	SslCheckService      *service.SslCheckService
+	WhoisService         *service.WhoisService
+	HeaderInspectService *service.HeaderInspectService
 }
 
-func NewApiHandler(GeoService *service.GeoLocateService, UserAgentService *service.UserAgentService, DnsService *service.DnsResolveService) *ApiHandler {
+func NewApiHandler(
+	GeoService *service.GeoLocateService,
+	UserAgentService *service.UserAgentService,
+	DnsService *service.DnsResolveService,
+	SslCheckService *service.SslCheckService,
+	WhoisService *service.WhoisService,
+	HeaderInspectService *service.HeaderInspectService,
+) *ApiHandler {
 	return &ApiHandler{
-		GeoService:       GeoService,
-		UserAgentService: UserAgentService,
-		DnsService:       DnsService,
+		GeoService:           GeoService,
+		UserAgentService:     UserAgentService,
+		DnsService:           DnsService,
+		SslCheckService:      SslCheckService,
+		WhoisService:         WhoisService,
+		HeaderInspectService: HeaderInspectService,
 	}
 }
 
@@ -172,19 +185,149 @@ func (Handler *ApiHandler) HandlePortCheck(ResponseWriter http.ResponseWriter, R
 		return
 	}
 
-	var DnsPayload model.DnsLookupRequest
-	if DecodeError := json.NewDecoder(Request.Body).Decode(&DnsPayload); DecodeError != nil {
+	var PortPayload model.PortCheckRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&PortPayload); DecodeError != nil {
 		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
 		return
 	}
 
-	if DnsPayload.TargetHost == "" {
+	if PortPayload.TargetHost == "" {
 		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Host Is Required")
 		return
 	}
 
-	PortResults := Handler.DnsService.CheckCommonPorts(DnsPayload.TargetHost)
-	WriteJsonSuccess(ResponseWriter, PortResults)
+	PortResult := Handler.DnsService.CheckPortsDetailed(PortPayload.TargetHost)
+	WriteJsonSuccess(ResponseWriter, PortResult)
+}
+
+func (Handler *ApiHandler) HandleSslCheck(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var SslPayload model.SslCheckRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&SslPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if SslPayload.TargetHost == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Host Is Required")
+		return
+	}
+
+	SslResult, SslError := Handler.SslCheckService.CheckCertificate(SslPayload.TargetHost)
+	if SslError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Unable To Retrieve Certificate: "+SslError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, SslResult)
+}
+
+func (Handler *ApiHandler) HandleWhoisLookup(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var WhoisPayload model.WhoisRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&WhoisPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if WhoisPayload.TargetDomain == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Domain Is Required")
+		return
+	}
+
+	WhoisResult, WhoisError := Handler.WhoisService.LookupDomain(WhoisPayload.TargetDomain)
+	if WhoisError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Whois Lookup Failed: "+WhoisError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, WhoisResult)
+}
+
+func (Handler *ApiHandler) HandleHeaderInspect(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var HeaderPayload model.HeaderInspectRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&HeaderPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if HeaderPayload.TargetUrl == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Url Is Required")
+		return
+	}
+
+	InspectResult, InspectError := Handler.HeaderInspectService.InspectUrl(HeaderPayload.TargetUrl)
+	if InspectError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Header Inspection Failed: "+InspectError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, InspectResult)
+}
+
+func (Handler *ApiHandler) HandleDnsRecords(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var RecordsPayload model.DnsRecordsRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&RecordsPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if RecordsPayload.TargetHost == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Host Is Required")
+		return
+	}
+
+	RecordsResult, RecordsError := Handler.DnsService.LookupFullRecords(RecordsPayload.TargetHost)
+	if RecordsError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Dns Records Lookup Failed: "+RecordsError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, RecordsResult)
+}
+
+func (Handler *ApiHandler) HandlePing(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var PingPayload model.PingRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&PingPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if PingPayload.TargetHost == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Host Is Required")
+		return
+	}
+
+	PingResult, PingError := Handler.DnsService.RunPing(PingPayload.TargetHost)
+	if PingError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Ping Failed: "+PingError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, PingResult)
 }
 
 func GenerateRequestId() string {

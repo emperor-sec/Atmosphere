@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -80,14 +81,18 @@ func NewGeoLocateService() *GeoLocateService {
 
 func (Service *GeoLocateService) ResolvePublicIp(ClientIp string) (model.GeoInfo, error) {
 	if IsPrivateIp(ClientIp) || IsLoopbackIp(ClientIp) {
-		return model.GeoInfo{
-			Ip:          ClientIp,
-			City:        "Unresolved",
-			Region:      "Unresolved",
-			Country:     "Private Network Range",
-			Asn:         "N/A",
-			SourceLabel: "Local Network Detection",
-		}, nil
+		DiscoveredIp, DiscoveryError := Service.DiscoverActualPublicIp()
+		if DiscoveryError != nil || DiscoveredIp == "" || IsPrivateIp(DiscoveredIp) || IsLoopbackIp(DiscoveredIp) {
+			return model.GeoInfo{
+				Ip:          ClientIp,
+				City:        "Unresolved",
+				Region:      "Unresolved",
+				Country:     "Private Network Range",
+				Asn:         "N/A",
+				SourceLabel: "Local Network Detection",
+			}, nil
+		}
+		return Service.ResolvePublicIp(DiscoveredIp)
 	}
 
 	ProviderChain := []func(string) (model.GeoInfo, error){
@@ -112,6 +117,32 @@ func (Service *GeoLocateService) ResolvePublicIp(ClientIp string) (model.GeoInfo
 		Asn:         "N/A",
 		SourceLabel: "None",
 	}, LastError
+}
+
+func (Service *GeoLocateService) DiscoverActualPublicIp() (string, error) {
+	DiscoveryEndpoints := []string{
+		"https://api.ipify.org",
+		"https://ifconfig.me/ip",
+		"https://icanhazip.com",
+	}
+
+	for _, EndpointUrl := range DiscoveryEndpoints {
+		Response, RequestError := Service.HttpClient.Get(EndpointUrl)
+		if RequestError != nil {
+			continue
+		}
+		BodyBytes, ReadError := io.ReadAll(io.LimitReader(Response.Body, 128))
+		Response.Body.Close()
+		if ReadError != nil {
+			continue
+		}
+		CandidateIp := strings.TrimSpace(string(BodyBytes))
+		if net.ParseIP(CandidateIp) != nil {
+			return CandidateIp, nil
+		}
+	}
+
+	return "", fmt.Errorf("unable to discover public ip from any endpoint")
 }
 
 func (Service *GeoLocateService) QueryIpApiCom(ClientIp string) (model.GeoInfo, error) {

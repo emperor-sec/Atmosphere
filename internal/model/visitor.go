@@ -120,3 +120,111 @@ type ReverseDnsResult struct {
 	Ip        string   `json:"Ip"`
 	Hostnames []string `json:"Hostnames"`
 }
+
+type SslCheckRequest struct {
+	TargetHost string `json:"TargetHost"`
+}
+
+type SslCertificateInfo struct {
+	Subject            string   `json:"Subject"`
+	Issuer             string   `json:"Issuer"`
+	SerialNumber       string   `json:"SerialNumber"`
+	SignatureAlgorithm string   `json:"SignatureAlgorithm"`
+	NotBefore          string   `json:"NotBefore"`
+	NotAfter           string   `json:"NotAfter"`
+	DaysUntilExpiry    int      `json:"DaysUntilExpiry"`
+	IsExpired          bool     `json:"IsExpired"`
+	IsSelfSigned       bool     `json:"IsSelfSigned"`
+	DnsNames           []string `json:"DnsNames"`
+	TlsVersion         string   `json:"TlsVersion"`
+	CipherSuite        string   `json:"CipherSuite"`
+}
+
+type SslCheckResult struct {
+	Hostname    string                `json:"Hostname"`
+	Certificate SslCertificateInfo    `json:"Certificate"`
+	ChainLength int                   `json:"ChainLength"`
+	ChainInfo   []SslCertificateInfo  `json:"ChainInfo"`
+}
+
+type WhoisRequest struct {
+	TargetDomain string `json:"TargetDomain"`
+}
+
+type WhoisResult struct {
+	Domain    string `json:"Domain"`
+	RawRecord string `json:"RawRecord"`
+	WhoisHost string `json:"WhoisHost"`
+}
+
+type HeaderInspectRequest struct {
+	TargetUrl string `json:"TargetUrl"`
+}
+
+type HeaderInspectResult struct {
+	Url            string            `json:"Url"`
+	StatusCode     int               `json:"StatusCode"`
+	StatusText     string            `json:"StatusText"`
+	FinalUrl       string            `json:"FinalUrl"`
+	Headers        []HttpHeaderEntry `json:"Headers"`
+	ResponseTimeMs int64             `json:"ResponseTimeMs"`
+	SecurityFlags  SecurityHeaderFlags `json:"SecurityFlags"`
+}
+
+type SecurityHeaderFlags struct {
+	HasHsts             bool `json:"HasHsts"`
+	HasCsp              bool `json:"HasCsp"`
+	HasXFrameOptions    bool `json:"HasXFrameOptions"`
+	HasXContentTypeOpts bool `json:"HasXContentTypeOpts"`
+	HasReferrerPolicy   bool `json:"HasReferrerPolicy"`
+}
+
+type DnsRecordsRequest struct {
+	TargetHost string `json:"TargetHost"`
+}
+
+type DnsRecordsResult struct {
+	Hostname   string   `json:"Hostname"`
+	ARecords   []string `json:"ARecords"`
+	AaaaRecords []string `json:"AaaaRecords"`
+	MxRecords  []string `json:"MxRecords"`
+	TxtRecords []string `json:"TxtRecords"`
+	NsRecords  []string `json:"NsRecords"`
+	CnameRecord string  `json:"CnameRecord"`
+}
+
+type PortCheckRequest struct {
+	TargetHost string `json:"TargetHost"`
+}
+
+type PortCheckEntry struct {
+	ServiceName string `json:"ServiceName"`
+	Port        int    `json:"Port"`
+	IsOpen      bool   `json:"IsOpen"`
+	LatencyMs   int64  `json:"LatencyMs"`
+}
+
+type PortCheckResult struct {
+	Hostname string           `json:"Hostname"`
+	Ports    []PortCheckEntry `json:"Ports"`
+}
+
+type PingRequest struct {
+	TargetHost string `json:"TargetHost"`
+}
+
+type PingAttempt struct {
+	Sequence  int   `json:"Sequence"`
+	Success   bool  `json:"Success"`
+	LatencyMs int64 `json:"LatencyMs"`
+}
+
+type PingResult struct {
+	Hostname     string        `json:"Hostname"`
+	ResolvedIp   string        `json:"ResolvedIp"`
+	Attempts     []PingAttempt `json:"Attempts"`
+	MinLatencyMs int64         `json:"MinLatencyMs"`
+	MaxLatencyMs int64         `json:"MaxLatencyMs"`
+	AvgLatencyMs int64         `json:"AvgLatencyMs"`
+	PacketLoss   float64       `json:"PacketLoss"`
+}

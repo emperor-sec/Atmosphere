@@ -420,6 +420,23 @@ body {
   word-break: break-word;
 }
 
+.WhoisRecord {
+  background-color: var(--Bg-Default);
+  border: 1px solid var(--Border-Default);
+  border-radius: var(--Radius-Large);
+  padding: 16px;
+  font-family: var(--Font-Mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--Text-Primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  margin-bottom: 20px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
 .SectionLabel {
   display: flex;
   align-items: center;
@@ -472,14 +489,59 @@ body {
   background-color: rgba(248, 81, 73, 0.1);
 }
 
+.Badge-Purple {
+  color: var(--Accent-Purple);
+  border-color: rgba(163, 113, 247, 0.35);
+  background-color: rgba(163, 113, 247, 0.1);
+}
+
 .MapEmbed {
   width: 100%;
   height: 320px;
   border: 1px solid var(--Border-Default);
   border-radius: var(--Radius-Large);
-  filter: grayscale(0.3) invert(0.9) contrast(0.9);
   margin-bottom: 12px;
   box-shadow: var(--Shadow-Soft);
+  background-color: var(--Bg-Subtle);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  contain: layout style paint;
+}
+
+.MapEmbed .leaflet-pane {
+  z-index: 1 !important;
+}
+
+.MapEmbed .leaflet-tile-pane {
+  z-index: 1 !important;
+}
+
+.MapEmbed .leaflet-overlay-pane {
+  z-index: 2 !important;
+}
+
+.MapEmbed .leaflet-marker-pane {
+  z-index: 3 !important;
+}
+
+.MapEmbed .leaflet-popup-pane {
+  z-index: 4 !important;
+}
+
+.MapEmbed .leaflet-top,
+.MapEmbed .leaflet-bottom {
+  z-index: 5 !important;
+}
+
+.MapEmbed .leaflet-control-attribution {
+  background-color: rgba(13, 17, 23, 0.75);
+  color: var(--Text-Muted);
+}
+
+.MapEmbed .leaflet-control-attribution a {
+  color: var(--Text-Secondary);
 }
 
 .MapLinkRow {
@@ -621,9 +683,10 @@ body {
 }
 
 .AboutCard-Logo {
-  font-size: 32px;
-  color: var(--Accent-Green);
-  margin-bottom: 12px;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 0 10px rgba(63, 185, 80, 0.35));
 }
 
 .AboutCard-Title {
@@ -657,7 +720,7 @@ body {
     top: 0;
     left: 0;
     bottom: 0;
-    z-index: 100;
+    z-index: 99999 !important;
     width: var(--Sidebar-Width) !important;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
@@ -673,7 +736,7 @@ body {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
+    z-index: 99998 !important;
   }
 
   .Sidebar-Backdrop.is-visible {
