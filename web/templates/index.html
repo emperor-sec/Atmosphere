@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Atmosphere</title>
   <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-  <link rel="stylesheet" href="/static/css/style.css?v=10">
+  <link rel="stylesheet" href="/static/css/style.css?v=17">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
 <body>
 
@@ -59,6 +61,22 @@
         <button class="NavItem" data-view="NetworkTools">
           <i class="fa-solid fa-tower-broadcast"></i>
           <span class="NavItem-Label">Network Tools</span>
+        </button>
+        <button class="NavItem" data-view="TechDetect">
+          <i class="fa-solid fa-layer-group"></i>
+          <span class="NavItem-Label">Tech Stack Detector</span>
+        </button>
+        <button class="NavItem" data-view="Subdomains">
+          <i class="fa-solid fa-sitemap"></i>
+          <span class="NavItem-Label">Subdomain Finder</span>
+        </button>
+        <button class="NavItem" data-view="Blacklist">
+          <i class="fa-solid fa-ban"></i>
+          <span class="NavItem-Label">Blacklist Check</span>
+        </button>
+        <button class="NavItem" data-view="WebRecon">
+          <i class="fa-solid fa-magnifying-glass-chart"></i>
+          <span class="NavItem-Label">Web Recon</span>
         </button>
         <button class="NavItem" data-view="About">
           <i class="fa-solid fa-circle-info"></i>
@@ -224,6 +242,86 @@
           <div id="PingContent"></div>
         </section>
 
+        <section id="TechDetectView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-layer-group"></i> Tech Stack Detector</div>
+          <form id="TechDetectForm" class="LookupForm">
+            <input type="text" id="TechDetectInput" class="LookupForm-Input" placeholder="Enter a URL, e.g. https://example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Detect Stack</button>
+          </form>
+          <div id="TechDetectLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Fingerprinting technology signatures...</span>
+          </div>
+          <div id="TechDetectError" class="ErrorState" style="display: none;"></div>
+          <div id="TechDetectContent"></div>
+        </section>
+
+        <section id="SubdomainsView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-sitemap"></i> Subdomain Finder</div>
+          <form id="SubdomainForm" class="LookupForm">
+            <input type="text" id="SubdomainInput" class="LookupForm-Input" placeholder="Enter a domain, e.g. example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Find Subdomains</button>
+          </form>
+          <div id="SubdomainLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Querying certificate transparency logs...</span>
+          </div>
+          <div id="SubdomainError" class="ErrorState" style="display: none;"></div>
+          <div id="SubdomainContent"></div>
+        </section>
+
+        <section id="BlacklistView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-ban"></i> Blacklist / Reputation Check</div>
+          <form id="BlacklistForm" class="LookupForm">
+            <input type="text" id="BlacklistInput" class="LookupForm-Input" placeholder="Enter an IPv4 address, e.g. 1.1.1.1" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Check Reputation</button>
+          </form>
+          <div id="BlacklistLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Querying DNS blacklist zones...</span>
+          </div>
+          <div id="BlacklistError" class="ErrorState" style="display: none;"></div>
+          <div id="BlacklistContent"></div>
+        </section>
+
+        <section id="WebReconView" class="ViewPanel">
+          <div class="SectionLabel"><i class="fa-solid fa-image"></i> Website Preview</div>
+          <form id="PreviewForm" class="LookupForm">
+            <input type="text" id="PreviewInput" class="LookupForm-Input" placeholder="Enter a URL, e.g. https://example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Fetch Preview</button>
+          </form>
+          <div id="PreviewLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Extracting page metadata...</span>
+          </div>
+          <div id="PreviewError" class="ErrorState" style="display: none;"></div>
+          <div id="PreviewContent"></div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-fingerprint"></i> Favicon Hash Lookup</div>
+          <form id="FaviconForm" class="LookupForm">
+            <input type="text" id="FaviconInput" class="LookupForm-Input" placeholder="Enter a URL, e.g. https://example.com" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Compute Hash</button>
+          </form>
+          <div id="FaviconLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Fetching and hashing favicon...</span>
+          </div>
+          <div id="FaviconError" class="ErrorState" style="display: none;"></div>
+          <div id="FaviconContent"></div>
+
+          <div class="SectionLabel"><i class="fa-solid fa-arrows-turn-right"></i> Redirect Chain Tracer</div>
+          <form id="RedirectTraceForm" class="LookupForm">
+            <input type="text" id="RedirectTraceInput" class="LookupForm-Input" placeholder="Enter a URL, e.g. https://bit.ly/example" autocomplete="off">
+            <button type="submit" class="BtnGithub BtnGithub-Primary">Trace Redirects</button>
+          </form>
+          <div id="RedirectTraceLoading" class="LoadingState" style="display: none;">
+            <i class="fa-solid fa-circle-notch SpinnerIcon"></i>
+            <span>Following redirect chain...</span>
+          </div>
+          <div id="RedirectTraceError" class="ErrorState" style="display: none;"></div>
+          <div id="RedirectTraceContent"></div>
+        </section>
+
         <section id="AboutView" class="ViewPanel">
           <div class="AboutCard">
             <img src="/static/img/logo.svg" alt="Atmosphere" class="AboutCard-Logo">
@@ -250,6 +348,12 @@
             <tr><td>Whois Lookup</td><td>Raw registry whois record with automatic referral follow-up</td></tr>
             <tr><td>Header Inspector</td><td>Response headers, status, timing, and security header flags</td></tr>
             <tr><td>Network Tools</td><td>Common port scan and TCP-based latency check</td></tr>
+            <tr><td>Tech Stack Detector</td><td>Fingerprints CMS, frameworks, analytics, and hosting from page signatures</td></tr>
+            <tr><td>Subdomain Finder</td><td>Discovers subdomains via certificate transparency logs</td></tr>
+            <tr><td>Blacklist Check</td><td>Queries public DNSBL zones for spam and abuse reputation</td></tr>
+            <tr><td>Website Preview</td><td>Open Graph metadata, title, description, and preview image</td></tr>
+            <tr><td>Favicon Hash Lookup</td><td>MD5 and Shodan-compatible MurmurHash3 favicon fingerprinting</td></tr>
+            <tr><td>Redirect Chain Tracer</td><td>Follows HTTP redirect hops to reveal a URL's final destination</td></tr>
             <tr><td>Geolocation Fallback</td><td>Automatically tries multiple providers for higher accuracy</td></tr>
           </table>
 
@@ -278,6 +382,6 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=10"></script>
+  <script src="/static/js/app.js?v=17"></script>
 </body>
 </html>

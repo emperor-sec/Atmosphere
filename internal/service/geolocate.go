@@ -73,6 +73,24 @@ type IpapiCoResponse struct {
 	Error       bool    `json:"error"`
 }
 
+type FreeIpApiResponse struct {
+	IpVersion       int     `json:"ipVersion"`
+	IpAddress       string  `json:"ipAddress"`
+	Latitude        float64 `json:"latitude"`
+	Longitude       float64 `json:"longitude"`
+	CountryName     string  `json:"countryName"`
+	CountryCode     string  `json:"countryCode"`
+	TimeZone        string  `json:"timeZone"`
+	ZipCode         string  `json:"zipCode"`
+	CityName        string  `json:"cityName"`
+	RegionName      string  `json:"regionName"`
+	Continent       string  `json:"continent"`
+	ContinentCode   string  `json:"continentCode"`
+	Asn             string  `json:"asn"`
+	AsnOrganization string  `json:"asnOrganization"`
+	IsProxy         bool    `json:"isProxy"`
+}
+
 func NewGeoLocateService() *GeoLocateService {
 	return &GeoLocateService{
 		HttpClient: &http.Client{Timeout: 5 * time.Second},
@@ -99,6 +117,7 @@ func (Service *GeoLocateService) ResolvePublicIp(ClientIp string) (model.GeoInfo
 		Service.QueryIpApiCom,
 		Service.QueryIpwhoisApp,
 		Service.QueryIpapiCo,
+		Service.QueryFreeIpApi,
 	}
 
 	var LastError error
@@ -235,6 +254,34 @@ func (Service *GeoLocateService) QueryIpapiCo(ClientIp string) (model.GeoInfo, e
 		"Unknown", ApiResult.Org, ApiResult.Asn,
 	)
 	Result.SourceLabel = "ipapi.co"
+	return Result, nil
+}
+
+func (Service *GeoLocateService) QueryFreeIpApi(ClientIp string) (model.GeoInfo, error) {
+	RequestUrl := fmt.Sprintf("https://free.freeipapi.com/api/json/%s", ClientIp)
+
+	Response, RequestError := Service.HttpClient.Get(RequestUrl)
+	if RequestError != nil {
+		return model.GeoInfo{}, RequestError
+	}
+	defer Response.Body.Close()
+
+	var ApiResult FreeIpApiResponse
+	if DecodeError := json.NewDecoder(Response.Body).Decode(&ApiResult); DecodeError != nil {
+		return model.GeoInfo{}, DecodeError
+	}
+
+	if ApiResult.CountryName == "" {
+		return model.GeoInfo{}, fmt.Errorf("freeipapi.com lookup failed")
+	}
+
+	Result := Service.BuildGeoInfo(
+		ApiResult.IpAddress, ApiResult.CityName, ApiResult.RegionName, ApiResult.CountryName, ApiResult.CountryCode,
+		ApiResult.Continent, ApiResult.ZipCode, ApiResult.Latitude, ApiResult.Longitude, ApiResult.TimeZone,
+		"Unknown", ApiResult.AsnOrganization, ApiResult.Asn,
+	)
+	Result.Proxy = ApiResult.IsProxy
+	Result.SourceLabel = "freeipapi.com"
 	return Result, nil
 }
 

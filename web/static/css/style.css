@@ -441,6 +441,49 @@ body {
   overflow-y: auto;
 }
 
+.PreviewImage {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border: 1px solid var(--Border-Default);
+  border-radius: var(--Radius-Large);
+  margin-bottom: 16px;
+  background-color: var(--Bg-Subtle);
+}
+
+.PreviewImagePlaceholder {
+  width: 100%;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--Border-Default);
+  border-radius: var(--Radius-Large);
+  margin-bottom: 16px;
+  color: var(--Text-Muted);
+  font-size: 13px;
+  background-color: var(--Bg-Subtle);
+}
+
+.FaviconThumbnail {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: var(--Bg-Subtle);
+  object-fit: contain;
+}
+
+.InlineLink {
+  color: var(--Accent-Blue);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.InlineLink:hover {
+  text-decoration: underline;
+}
+
 .SectionLabel {
   display: flex;
   align-items: center;
@@ -546,6 +589,105 @@ body {
 
 .MapEmbed .leaflet-control-attribution a {
   color: var(--Text-Secondary);
+}
+
+.MapSectionLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.MapViewToggle {
+  display: flex;
+  border: 1px solid var(--Border-Default);
+  border-radius: var(--Radius-Default);
+  overflow: hidden;
+}
+
+.MapViewToggle-Btn {
+  background: var(--Bg-Subtle);
+  border: none;
+  color: var(--Text-Secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.MapViewToggle-Btn:not(:last-child) {
+  border-right: 1px solid var(--Border-Default);
+}
+
+.MapViewToggle-Btn.is-active {
+  background: linear-gradient(135deg, var(--Accent-Green) 0%, var(--Accent-Blue) 100%);
+  color: var(--Bg-Default);
+}
+
+.GlobeEmbed {
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--Border-Default);
+  border-radius: var(--Radius-Large);
+  margin-bottom: 12px;
+  box-shadow: var(--Shadow-Soft);
+  background: radial-gradient(circle at 50% 40%, #0d1b2a 0%, #06090f 100%);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  contain: layout style paint;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.GlobeEmbed canvas {
+  cursor: grab;
+}
+
+.GlobeEmbed canvas:active {
+  cursor: grabbing;
+}
+
+.GlobeEmbed-Error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--Text-Muted);
+  font-size: 13px;
+}
+
+.GlobeMarkerLabel {
+  position: absolute;
+  transform: translate(10px, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 9px;
+  border-radius: var(--Radius-Default);
+  background-color: rgba(13, 17, 23, 0.85);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.GlobeMarkerLabel-Name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--Text-Primary);
+}
+
+.GlobeMarkerLabel-Coords {
+  font-size: 10px;
+  font-family: var(--Font-Mono);
+  color: var(--Accent-Red);
 }
 
 .MapLinkRow {

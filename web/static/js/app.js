@@ -1,3 +1,4 @@
+
 class AtmosphereClient {
   constructor() {
     this.TopBarTitleElement = document.getElementById("TopBarTitle");
@@ -10,6 +11,7 @@ class AtmosphereClient {
     this.LastLookupData = null;
     this.LastBatchData = null;
     this.ActiveMapInstances = [];
+    this.ActiveGlobeInstances = [];
 
     this.ViewTitleMap = {
       SelfScan: "Self Scan",
@@ -20,6 +22,10 @@ class AtmosphereClient {
       WhoisLookup: "Whois Lookup",
       HeaderInspect: "Header Inspector",
       NetworkTools: "Network Tools",
+      TechDetect: "Tech Stack Detector",
+      Subdomains: "Subdomain Finder",
+      Blacklist: "Blacklist Check",
+      WebRecon: "Web Recon",
       About: "About",
     };
 
@@ -138,6 +144,36 @@ class AtmosphereClient {
     document.getElementById("PingForm").addEventListener("submit", (SubmitEvent) => {
       SubmitEvent.preventDefault();
       this.RunPing(document.getElementById("PingInput").value.trim());
+    });
+
+    document.getElementById("TechDetectForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunTechDetect(document.getElementById("TechDetectInput").value.trim());
+    });
+
+    document.getElementById("SubdomainForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunSubdomainEnum(document.getElementById("SubdomainInput").value.trim());
+    });
+
+    document.getElementById("BlacklistForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunBlacklistCheck(document.getElementById("BlacklistInput").value.trim());
+    });
+
+    document.getElementById("PreviewForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunPreview(document.getElementById("PreviewInput").value.trim());
+    });
+
+    document.getElementById("FaviconForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunFaviconLookup(document.getElementById("FaviconInput").value.trim());
+    });
+
+    document.getElementById("RedirectTraceForm").addEventListener("submit", (SubmitEvent) => {
+      SubmitEvent.preventDefault();
+      this.RunRedirectTrace(document.getElementById("RedirectTraceInput").value.trim());
     });
   }
 
@@ -677,6 +713,321 @@ class AtmosphereClient {
     return EscapeElement.innerHTML;
   }
 
+  async RunTechDetect(TargetUrl) {
+    if (!TargetUrl) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("TechDetectLoading");
+    const ErrorElement = document.getElementById("TechDetectError");
+    const ContentElement = document.getElementById("TechDetectContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/tech-detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetUrl: TargetUrl }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Tech detection failed");
+      }
+
+      const GroupedByCategory = {};
+      (ResultData.DetectedEntries || []).forEach((Entry) => {
+        if (!GroupedByCategory[Entry.Category]) {
+          GroupedByCategory[Entry.Category] = [];
+        }
+        GroupedByCategory[Entry.Category].push(Entry.Name);
+      });
+
+      const CategoryRowsHtml = Object.keys(GroupedByCategory).sort().map((CategoryName) => `
+        <tr>
+          <td>${CategoryName}</td>
+          <td>${GroupedByCategory[CategoryName].map((Name) => this.WrapBadge(Name, "Blue")).join(" ")}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="2">No known technology signatures detected</td></tr>`;
+
+      ContentElement.innerHTML = `
+        <div class="ResultHeader">
+          <span class="ResultHeader-Ip">${ResultData.Url}</span>
+          <span class="ResultHeader-Location">${(ResultData.DetectedEntries || []).length} Signatures Found</span>
+        </div>
+
+        <div class="SectionLabel"><i class="fa-solid fa-layer-group"></i> Detected Technologies</div>
+        <table class="DataTable">
+          ${CategoryRowsHtml}
+        </table>
+
+        <div class="SectionLabel"><i class="fa-solid fa-server"></i> Server Headers</div>
+        <table class="DataTable">
+          <tr><td>Server</td><td>${ResultData.ServerHeader || "Not Disclosed"}</td></tr>
+          <tr><td>X-Powered-By</td><td>${ResultData.PoweredByHeader || "Not Disclosed"}</td></tr>
+        </table>
+      `;
+    } catch (TechError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${TechError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
+  async RunSubdomainEnum(TargetDomain) {
+    if (!TargetDomain) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("SubdomainLoading");
+    const ErrorElement = document.getElementById("SubdomainError");
+    const ContentElement = document.getElementById("SubdomainContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/subdomain-enum", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetDomain: TargetDomain }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Subdomain enumeration failed");
+      }
+
+      const SubdomainRowsHtml = (ResultData.Subdomains || []).map((SubdomainName) => `
+        <tr><td colspan="2">${SubdomainName}</td></tr>
+      `).join("") || `<tr><td colspan="2">No subdomains discovered</td></tr>`;
+
+      ContentElement.innerHTML = `
+        <div class="ResultHeader">
+          <span class="ResultHeader-Ip">${ResultData.Domain}</span>
+          <span class="ResultHeader-Location">${ResultData.TotalDiscovered} Subdomains Found</span>
+        </div>
+        <div class="SectionLabel"><i class="fa-solid fa-sitemap"></i> Discovered Subdomains</div>
+        <table class="DataTable">
+          ${SubdomainRowsHtml}
+        </table>
+      `;
+    } catch (SubdomainError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${SubdomainError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
+  async RunBlacklistCheck(TargetIp) {
+    if (!TargetIp) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("BlacklistLoading");
+    const ErrorElement = document.getElementById("BlacklistError");
+    const ContentElement = document.getElementById("BlacklistContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/blacklist-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetIp: TargetIp }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Blacklist check failed");
+      }
+
+      const ZoneRowsHtml = (ResultData.Entries || []).map((Entry) => `
+        <tr>
+          <td>${Entry.ZoneName}</td>
+          <td>${Entry.IsListed ? this.WrapBadge("Listed", "Red") : this.WrapBadge("Clean", "Green")}</td>
+        </tr>
+      `).join("");
+
+      const OverallBadge = ResultData.ListedCount > 0
+        ? this.WrapBadge(`Listed On ${ResultData.ListedCount} Of ${ResultData.TotalChecked}`, "Red")
+        : this.WrapBadge(`Clean On All ${ResultData.TotalChecked} Zones`, "Green");
+
+      ContentElement.innerHTML = `
+        <div class="ResultHeader">
+          <span class="ResultHeader-Ip">${ResultData.Ip}</span>
+          <span class="ResultHeader-Location">${OverallBadge}</span>
+        </div>
+        <div class="SectionLabel"><i class="fa-solid fa-ban"></i> DNSBL Zone Results</div>
+        <table class="DataTable">
+          ${ZoneRowsHtml}
+        </table>
+      `;
+    } catch (BlacklistError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${BlacklistError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
+  async RunPreview(TargetUrl) {
+    if (!TargetUrl) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("PreviewLoading");
+    const ErrorElement = document.getElementById("PreviewError");
+    const ContentElement = document.getElementById("PreviewContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetUrl: TargetUrl }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Preview fetch failed");
+      }
+
+      const PreviewImageHtml = ResultData.PreviewImageUrl
+        ? `<img src="${ResultData.PreviewImageUrl}" alt="Preview" class="PreviewImage">`
+        : `<div class="PreviewImagePlaceholder"><i class="fa-solid fa-image"></i> No Preview Image Found</div>`;
+
+      ContentElement.innerHTML = `
+        ${PreviewImageHtml}
+        <table class="DataTable">
+          <tr><td>URL</td><td>${ResultData.Url}</td></tr>
+          <tr><td>Page Title</td><td>${ResultData.PageTitle || "Not Found"}</td></tr>
+          <tr><td>OG Title</td><td>${ResultData.OgTitle || "Not Found"}</td></tr>
+          <tr><td>Site Name</td><td>${ResultData.OgSiteName || "Not Found"}</td></tr>
+          <tr><td>Description</td><td>${ResultData.Description || "Not Found"}</td></tr>
+          <tr><td>Theme Color</td><td>${ResultData.ThemeColor || "Not Set"}</td></tr>
+        </table>
+      `;
+    } catch (PreviewError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${PreviewError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
+  async RunFaviconLookup(TargetUrl) {
+    if (!TargetUrl) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("FaviconLoading");
+    const ErrorElement = document.getElementById("FaviconError");
+    const ContentElement = document.getElementById("FaviconContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/favicon-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetUrl: TargetUrl }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Favicon lookup failed");
+      }
+
+      ContentElement.innerHTML = `
+        <div class="ResultHeader">
+          <img src="${ResultData.FaviconUrl}" alt="Favicon" class="FaviconThumbnail">
+          <span class="ResultHeader-Location">${ResultData.SizeBytes} Bytes</span>
+        </div>
+        <table class="DataTable">
+          <tr><td>Favicon URL</td><td>${ResultData.FaviconUrl}</td></tr>
+          <tr><td>MD5 Hash</td><td>${ResultData.Md5Hash}</td></tr>
+          <tr><td>MurmurHash3 (Shodan)</td><td>${ResultData.Mmh3Hash}</td></tr>
+          <tr><td>Shodan Query</td><td><a href="${ResultData.ShodanQueryUrl}" target="_blank" class="InlineLink">${ResultData.ShodanQueryUrl}</a></td></tr>
+        </table>
+      `;
+    } catch (FaviconError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${FaviconError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
+  async RunRedirectTrace(TargetUrl) {
+    if (!TargetUrl) {
+      return;
+    }
+
+    const LoadingElement = document.getElementById("RedirectTraceLoading");
+    const ErrorElement = document.getElementById("RedirectTraceError");
+    const ContentElement = document.getElementById("RedirectTraceContent");
+
+    ErrorElement.style.display = "none";
+    ContentElement.innerHTML = "";
+    LoadingElement.style.display = "flex";
+
+    try {
+      const Response = await fetch("/api/redirect-trace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TargetUrl: TargetUrl }),
+      });
+
+      const ResultData = await Response.json();
+
+      if (!Response.ok) {
+        throw new Error(ResultData.Error || "Redirect trace failed");
+      }
+
+      const HopRowsHtml = (ResultData.Hops || []).map((Hop) => `
+        <tr>
+          <td>Hop ${Hop.HopNumber}</td>
+          <td>${this.WrapBadge(Hop.StatusCode, Hop.StatusCode >= 400 ? "Red" : (Hop.StatusCode >= 300 ? "Orange" : "Green"))} ${Hop.Url}</td>
+        </tr>
+      `).join("");
+
+      ContentElement.innerHTML = `
+        <div class="ResultHeader">
+          <span class="ResultHeader-Ip">${ResultData.TotalHops} Hops</span>
+          <span class="ResultHeader-Location">${ResultData.FinalUrl}</span>
+        </div>
+        <div class="SectionLabel"><i class="fa-solid fa-arrows-turn-right"></i> Redirect Chain</div>
+        <table class="DataTable">
+          ${HopRowsHtml}
+        </table>
+      `;
+    } catch (RedirectError) {
+      ErrorElement.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${RedirectError.message}`;
+      ErrorElement.style.display = "flex";
+    } finally {
+      LoadingElement.style.display = "none";
+    }
+  }
+
   async CollectClientHints() {
     const LanguageList = navigator.languages ? Array.from(navigator.languages) : [navigator.language];
 
@@ -763,10 +1114,18 @@ class AtmosphereClient {
     }
 
     const MapContainerId = `MapCanvas-${Math.random().toString(36).slice(2)}`;
+    const GlobeContainerId = `GlobeCanvas-${Math.random().toString(36).slice(2)}`;
 
     return `
-      <div class="SectionLabel"><i class="fa-solid fa-map-location-dot"></i> Location Map</div>
+      <div class="SectionLabel MapSectionLabel">
+        <span><i class="fa-solid fa-map-location-dot"></i> Location Map</span>
+        <div class="MapViewToggle" data-map-target="${MapContainerId}" data-globe-target="${GlobeContainerId}">
+          <button type="button" class="MapViewToggle-Btn is-active" data-mode="2d">2D Map</button>
+          <button type="button" class="MapViewToggle-Btn" data-mode="3d">3D Globe</button>
+        </div>
+      </div>
       <div class="MapEmbed" id="${MapContainerId}" data-lat="${GeoData.Latitude}" data-lon="${GeoData.Longitude}" data-label="${GeoData.City || ""}, ${GeoData.Country || ""}"></div>
+      <div class="GlobeEmbed" id="${GlobeContainerId}" data-lat="${GeoData.Latitude}" data-lon="${GeoData.Longitude}" data-label="${GeoData.City || ""}, ${GeoData.Country || ""}" style="display: none;"></div>
       <div class="MapLinkRow">
         <a class="MapLink" href="${GeoData.GoogleMapUrl}" target="_blank"><i class="fa-brands fa-google"></i> Open in Google Maps</a>
         <a class="MapLink" href="${GeoData.OsmMapUrl}" target="_blank"><i class="fa-solid fa-map"></i> Open in OpenStreetMap</a>
@@ -804,6 +1163,304 @@ class AtmosphereClient {
         setTimeout(() => MapInstance.invalidateSize(), 250);
       });
     });
+
+    ContainerElement.querySelectorAll(".MapViewToggle").forEach((ToggleElement) => {
+      ToggleElement.querySelectorAll(".MapViewToggle-Btn").forEach((ButtonElement) => {
+        ButtonElement.addEventListener("click", () => {
+          const SelectedMode = ButtonElement.dataset.mode;
+          const MapTargetElement = document.getElementById(ToggleElement.dataset.mapTarget);
+          const GlobeTargetElement = document.getElementById(ToggleElement.dataset.globeTarget);
+
+          ToggleElement.querySelectorAll(".MapViewToggle-Btn").forEach((SiblingButton) => {
+            SiblingButton.classList.toggle("is-active", SiblingButton === ButtonElement);
+          });
+
+          if (SelectedMode === "3d") {
+            MapTargetElement.style.display = "none";
+            GlobeTargetElement.style.display = "flex";
+            if (GlobeTargetElement.dataset.initialized !== "true") {
+              GlobeTargetElement.innerHTML = `<div class="GlobeEmbed-Error"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading globe...</div>`;
+            }
+            this.InitializeGlobe(GlobeTargetElement);
+          } else {
+            GlobeTargetElement.style.display = "none";
+            MapTargetElement.style.display = "block";
+            const MatchingMapInstance = this.ActiveMapInstances.find((Instance) => Instance._container && Instance._container.id === MapTargetElement.id);
+            if (MatchingMapInstance) {
+              requestAnimationFrame(() => MatchingMapInstance.invalidateSize());
+            }
+          }
+        });
+      });
+    });
+  }
+
+  async InitializeGlobe(GlobeContainerElement) {
+    if (GlobeContainerElement.dataset.initialized === "true") {
+      return;
+    }
+    if (!window.THREE) {
+      GlobeContainerElement.innerHTML = `<div class="GlobeEmbed-Error"><i class="fa-solid fa-triangle-exclamation"></i> 3D engine failed to load</div>`;
+      return;
+    }
+    GlobeContainerElement.dataset.initialized = "true";
+    GlobeContainerElement.innerHTML = "";
+
+    const Latitude = parseFloat(GlobeContainerElement.dataset.lat);
+    const Longitude = parseFloat(GlobeContainerElement.dataset.lon);
+    const ContainerWidth = GlobeContainerElement.clientWidth || 320;
+    const ContainerHeight = GlobeContainerElement.clientHeight || 320;
+
+    const Scene = new window.THREE.Scene();
+    const Camera = new window.THREE.PerspectiveCamera(45, ContainerWidth / ContainerHeight, 0.1, 1000);
+    Camera.position.z = 2.6;
+
+    const Renderer = new window.THREE.WebGLRenderer({ antialias: true, alpha: true });
+    Renderer.setSize(ContainerWidth, ContainerHeight);
+    Renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    GlobeContainerElement.appendChild(Renderer.domElement);
+
+    const GlobeGroup = new window.THREE.Group();
+    Scene.add(GlobeGroup);
+
+    const SphereGeometry = new window.THREE.SphereGeometry(1, 48, 48);
+    const SphereMaterial = new window.THREE.MeshBasicMaterial({
+      color: 0x000000,
+    });
+    const SphereMesh = new window.THREE.Mesh(SphereGeometry, SphereMaterial);
+    GlobeGroup.add(SphereMesh);
+
+    const ContinentOutlines = await this.BuildContinentOutlines();
+    GlobeGroup.add(ContinentOutlines);
+
+    const GlowGeometry = new window.THREE.SphereGeometry(1.12, 32, 32);
+    const GlowMaterial = new window.THREE.MeshBasicMaterial({
+      color: 0xbfff4d,
+      transparent: true,
+      opacity: 0.05,
+      side: window.THREE.BackSide,
+    });
+    const GlowMesh = new window.THREE.Mesh(GlowGeometry, GlowMaterial);
+    Scene.add(GlowMesh);
+
+    const StarGeometry = new window.THREE.BufferGeometry();
+    const StarCount = 400;
+    const StarPositions = new Float32Array(StarCount * 3);
+    for (let StarIndex = 0; StarIndex < StarCount; StarIndex++) {
+      const Radius = 8 + Math.random() * 6;
+      const Theta = Math.random() * Math.PI * 2;
+      const Phi = Math.acos(2 * Math.random() - 1);
+      StarPositions[StarIndex * 3] = Radius * Math.sin(Phi) * Math.cos(Theta);
+      StarPositions[StarIndex * 3 + 1] = Radius * Math.sin(Phi) * Math.sin(Theta);
+      StarPositions[StarIndex * 3 + 2] = Radius * Math.cos(Phi);
+    }
+    StarGeometry.setAttribute("position", new window.THREE.BufferAttribute(StarPositions, 3));
+    const StarMaterial = new window.THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.6 });
+    const StarField = new window.THREE.Points(StarGeometry, StarMaterial);
+    Scene.add(StarField);
+
+    const MarkerPosition = this.ConvertLatLonToVector3(Latitude, Longitude, 1.02);
+    const MarkerGeometry = new window.THREE.SphereGeometry(0.02, 16, 16);
+    const MarkerMaterial = new window.THREE.MeshBasicMaterial({ color: 0xf85149 });
+    const MarkerMesh = new window.THREE.Mesh(MarkerGeometry, MarkerMaterial);
+    MarkerMesh.position.copy(MarkerPosition);
+    GlobeGroup.add(MarkerMesh);
+
+    const PulseGeometry = new window.THREE.SphereGeometry(0.02, 16, 16);
+    const PulseMaterial = new window.THREE.MeshBasicMaterial({ color: 0xf85149, transparent: true, opacity: 0.5 });
+    const PulseMesh = new window.THREE.Mesh(PulseGeometry, PulseMaterial);
+    PulseMesh.position.copy(MarkerPosition);
+    GlobeGroup.add(PulseMesh);
+
+    const LabelText = GlobeContainerElement.dataset.label || "";
+    const CoordinateText = `${Latitude.toFixed(4)}, ${Longitude.toFixed(4)}`;
+    const LabelElement = document.createElement("div");
+    LabelElement.className = "GlobeMarkerLabel";
+    LabelElement.innerHTML = `<span class="GlobeMarkerLabel-Name">${LabelText}</span><span class="GlobeMarkerLabel-Coords">${CoordinateText}</span>`;
+    GlobeContainerElement.appendChild(LabelElement);
+
+    const InitialRotationY = -window.THREE.MathUtils.degToRad(Longitude) - Math.PI / 2;
+    const InitialRotationX = window.THREE.MathUtils.degToRad(Latitude) * 0.4;
+    GlobeGroup.rotation.y = InitialRotationY;
+    GlobeGroup.rotation.x = InitialRotationX;
+
+    let IsDragging = false;
+    let PreviousPointerX = 0;
+    let PreviousPointerY = 0;
+    let AutoRotate = true;
+
+    const StartDrag = (PointerX, PointerY) => {
+      IsDragging = true;
+      AutoRotate = false;
+      PreviousPointerX = PointerX;
+      PreviousPointerY = PointerY;
+    };
+    const MoveDrag = (PointerX, PointerY) => {
+      if (!IsDragging) {
+        return;
+      }
+      const DeltaX = PointerX - PreviousPointerX;
+      const DeltaY = PointerY - PreviousPointerY;
+      GlobeGroup.rotation.y += DeltaX * 0.005;
+      GlobeGroup.rotation.x += DeltaY * 0.005;
+      PreviousPointerX = PointerX;
+      PreviousPointerY = PointerY;
+    };
+    const EndDrag = () => {
+      IsDragging = false;
+    };
+
+    Renderer.domElement.addEventListener("mousedown", (Event) => StartDrag(Event.clientX, Event.clientY));
+    window.addEventListener("mousemove", (Event) => MoveDrag(Event.clientX, Event.clientY));
+    window.addEventListener("mouseup", EndDrag);
+    Renderer.domElement.addEventListener("touchstart", (Event) => {
+      const Touch = Event.touches[0];
+      StartDrag(Touch.clientX, Touch.clientY);
+    }, { passive: true });
+    Renderer.domElement.addEventListener("touchmove", (Event) => {
+      const Touch = Event.touches[0];
+      MoveDrag(Touch.clientX, Touch.clientY);
+    }, { passive: true });
+    Renderer.domElement.addEventListener("touchend", EndDrag);
+
+    let PulseScale = 1;
+    let PulseGrowing = true;
+    let AnimationFrameHandle = null;
+
+    const AnimateFrame = () => {
+      if (AutoRotate) {
+        GlobeGroup.rotation.y += 0.0015;
+      }
+
+      PulseScale += PulseGrowing ? 0.02 : -0.02;
+      if (PulseScale > 2.2) {
+        PulseGrowing = false;
+      } else if (PulseScale < 1) {
+        PulseGrowing = true;
+      }
+      PulseMesh.scale.set(PulseScale, PulseScale, PulseScale);
+      PulseMaterial.opacity = Math.max(0, 0.5 - (PulseScale - 1) * 0.35);
+
+      StarField.rotation.y += 0.0002;
+
+      const ProjectedPosition = MarkerPosition.clone().applyMatrix4(GlobeGroup.matrixWorld).project(Camera);
+      const IsFacingCamera = ProjectedPosition.z < 1;
+      const MarkerWorldPosition = MarkerPosition.clone().applyMatrix4(GlobeGroup.matrixWorld);
+      const MarkerNormal = MarkerWorldPosition.clone().normalize();
+      const ToCameraVector = Camera.position.clone().normalize();
+      const IsOnNearSide = MarkerNormal.dot(ToCameraVector) > 0.1;
+
+      if (IsFacingCamera && IsOnNearSide) {
+        const ScreenX = (ProjectedPosition.x * 0.5 + 0.5) * ContainerWidth;
+        const ScreenY = (-ProjectedPosition.y * 0.5 + 0.5) * ContainerHeight;
+        LabelElement.style.left = `${ScreenX}px`;
+        LabelElement.style.top = `${ScreenY}px`;
+        LabelElement.style.display = "flex";
+      } else {
+        LabelElement.style.display = "none";
+      }
+
+      Renderer.render(Scene, Camera);
+      AnimationFrameHandle = requestAnimationFrame(AnimateFrame);
+    };
+    AnimateFrame();
+
+    this.ActiveGlobeInstances.push({
+      ContainerElement: GlobeContainerElement,
+      StopAnimation: () => {
+        if (AnimationFrameHandle) {
+          cancelAnimationFrame(AnimationFrameHandle);
+        }
+      },
+    });
+  }
+
+  ConvertLatLonToVector3(Latitude, Longitude, Radius) {
+    const PhiAngle = (90 - Latitude) * (Math.PI / 180);
+    const ThetaAngle = (Longitude + 180) * (Math.PI / 180);
+
+    const X = -Radius * Math.sin(PhiAngle) * Math.cos(ThetaAngle);
+    const Y = Radius * Math.cos(PhiAngle);
+    const Z = Radius * Math.sin(PhiAngle) * Math.sin(ThetaAngle);
+
+    return new window.THREE.Vector3(X, Y, Z);
+  }
+
+  async FetchWorldLandGeometry() {
+    if (AtmosphereClient.CachedWorldLandFeature) {
+      return AtmosphereClient.CachedWorldLandFeature;
+    }
+    if (AtmosphereClient.WorldLandFetchPromise) {
+      return AtmosphereClient.WorldLandFetchPromise;
+    }
+
+    AtmosphereClient.WorldLandFetchPromise = fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json")
+      .then((Response) => Response.json())
+      .then((TopologyData) => {
+        if (!window.topojson) {
+          throw new Error("topojson-client failed to load");
+        }
+        const LandFeature = window.topojson.feature(TopologyData, TopologyData.objects.land);
+        AtmosphereClient.CachedWorldLandFeature = LandFeature;
+        return LandFeature;
+      })
+      .catch((FetchError) => {
+        console.error("Failed to load world land geometry:", FetchError);
+        AtmosphereClient.WorldLandFetchPromise = null;
+        return null;
+      });
+
+    return AtmosphereClient.WorldLandFetchPromise;
+  }
+
+  async BuildContinentOutlines() {
+    const OutlineGroup = new window.THREE.Group();
+    const LandFeature = await this.FetchWorldLandGeometry();
+
+    if (!LandFeature) {
+      return OutlineGroup;
+    }
+
+    const OutlineMaterial = new window.THREE.LineBasicMaterial({ color: 0xbfff4d, transparent: true, opacity: 1, linewidth: 2 });
+    const OutlineMaterialGlow = new window.THREE.LineBasicMaterial({ color: 0xbfff4d, transparent: true, opacity: 0.4, linewidth: 4 });
+
+    LandFeature.features.forEach((LandFeatureEntry) => {
+      const GeometryType = LandFeatureEntry.geometry.type;
+      const PolygonList = GeometryType === "Polygon"
+        ? [LandFeatureEntry.geometry.coordinates]
+        : LandFeatureEntry.geometry.coordinates;
+
+      PolygonList.forEach((PolygonRings) => {
+        if (!PolygonRings || PolygonRings.length === 0) {
+          return;
+        }
+
+        PolygonRings.forEach((RingCoordinates) => {
+          if (!RingCoordinates || RingCoordinates.length < 3) {
+            return;
+          }
+
+          const RingPositions = [];
+          const GlowPositions = [];
+          RingCoordinates.forEach(([PointLongitude, PointLatitude]) => {
+            const PointVector = this.ConvertLatLonToVector3(PointLatitude, PointLongitude, 1.007);
+            RingPositions.push(PointVector.x, PointVector.y, PointVector.z);
+            const GlowVector = this.ConvertLatLonToVector3(PointLatitude, PointLongitude, 1.005);
+            GlowPositions.push(GlowVector.x, GlowVector.y, GlowVector.z);
+          });
+
+          const RingGeometry = new window.THREE.BufferGeometry();
+          RingGeometry.setAttribute("position", new window.THREE.BufferAttribute(new Float32Array(RingPositions), 3));
+          OutlineGroup.add(new window.THREE.LineLoop(RingGeometry, OutlineMaterial));
+
+          const GlowGeometry = new window.THREE.BufferGeometry();
+          GlowGeometry.setAttribute("position", new window.THREE.BufferAttribute(new Float32Array(GlowPositions), 3));
+          OutlineGroup.add(new window.THREE.LineLoop(GlowGeometry, OutlineMaterialGlow));
+        });
+      });
+    });
+
+    return OutlineGroup;
   }
 
   BuildGeoTableHtml(GeoData) {

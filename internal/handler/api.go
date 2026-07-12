@@ -12,12 +12,18 @@ import (
 )
 
 type ApiHandler struct {
-	GeoService           *service.GeoLocateService
-	UserAgentService     *service.UserAgentService
-	DnsService           *service.DnsResolveService
-	SslCheckService      *service.SslCheckService
-	WhoisService         *service.WhoisService
-	HeaderInspectService *service.HeaderInspectService
+	GeoService            *service.GeoLocateService
+	UserAgentService      *service.UserAgentService
+	DnsService            *service.DnsResolveService
+	SslCheckService       *service.SslCheckService
+	WhoisService          *service.WhoisService
+	HeaderInspectService  *service.HeaderInspectService
+	TechDetectService     *service.TechDetectService
+	BlacklistService      *service.BlacklistService
+	PreviewService        *service.PreviewService
+	SubdomainService      *service.SubdomainService
+	FaviconService        *service.FaviconService
+	RedirectTraceService  *service.RedirectTraceService
 }
 
 func NewApiHandler(
@@ -27,6 +33,12 @@ func NewApiHandler(
 	SslCheckService *service.SslCheckService,
 	WhoisService *service.WhoisService,
 	HeaderInspectService *service.HeaderInspectService,
+	TechDetectService *service.TechDetectService,
+	BlacklistService *service.BlacklistService,
+	PreviewService *service.PreviewService,
+	SubdomainService *service.SubdomainService,
+	FaviconService *service.FaviconService,
+	RedirectTraceService *service.RedirectTraceService,
 ) *ApiHandler {
 	return &ApiHandler{
 		GeoService:           GeoService,
@@ -35,6 +47,12 @@ func NewApiHandler(
 		SslCheckService:      SslCheckService,
 		WhoisService:         WhoisService,
 		HeaderInspectService: HeaderInspectService,
+		TechDetectService:    TechDetectService,
+		BlacklistService:     BlacklistService,
+		PreviewService:       PreviewService,
+		SubdomainService:     SubdomainService,
+		FaviconService:       FaviconService,
+		RedirectTraceService: RedirectTraceService,
 	}
 }
 
@@ -328,6 +346,162 @@ func (Handler *ApiHandler) HandlePing(ResponseWriter http.ResponseWriter, Reques
 	}
 
 	WriteJsonSuccess(ResponseWriter, PingResult)
+}
+
+func (Handler *ApiHandler) HandleTechDetect(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var TechPayload model.TechDetectRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&TechPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if TechPayload.TargetUrl == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Url Is Required")
+		return
+	}
+
+	TechResult, TechError := Handler.TechDetectService.DetectStack(TechPayload.TargetUrl)
+	if TechError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Tech Detection Failed: "+TechError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, TechResult)
+}
+
+func (Handler *ApiHandler) HandleBlacklistCheck(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var BlacklistPayload model.BlacklistRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&BlacklistPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if BlacklistPayload.TargetIp == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Ip Is Required")
+		return
+	}
+
+	BlacklistResult, BlacklistError := Handler.BlacklistService.CheckReputation(BlacklistPayload.TargetIp)
+	if BlacklistError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Blacklist Check Failed: "+BlacklistError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, BlacklistResult)
+}
+
+func (Handler *ApiHandler) HandlePreview(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var PreviewPayload model.PreviewRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&PreviewPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if PreviewPayload.TargetUrl == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Url Is Required")
+		return
+	}
+
+	PreviewResult, PreviewError := Handler.PreviewService.FetchPreview(PreviewPayload.TargetUrl)
+	if PreviewError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Preview Fetch Failed: "+PreviewError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, PreviewResult)
+}
+
+func (Handler *ApiHandler) HandleSubdomainEnum(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var SubdomainPayload model.SubdomainRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&SubdomainPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if SubdomainPayload.TargetDomain == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Domain Is Required")
+		return
+	}
+
+	SubdomainResult, SubdomainError := Handler.SubdomainService.EnumerateSubdomains(SubdomainPayload.TargetDomain)
+	if SubdomainError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Subdomain Enumeration Failed: "+SubdomainError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, SubdomainResult)
+}
+
+func (Handler *ApiHandler) HandleFaviconLookup(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var FaviconPayload model.FaviconRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&FaviconPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if FaviconPayload.TargetUrl == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Url Is Required")
+		return
+	}
+
+	FaviconResult, FaviconError := Handler.FaviconService.LookupFaviconHash(FaviconPayload.TargetUrl)
+	if FaviconError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Favicon Lookup Failed: "+FaviconError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, FaviconResult)
+}
+
+func (Handler *ApiHandler) HandleRedirectTrace(ResponseWriter http.ResponseWriter, Request *http.Request) {
+	if Request.Method != http.MethodPost {
+		WriteJsonError(ResponseWriter, http.StatusMethodNotAllowed, "Method Not Allowed")
+		return
+	}
+
+	var RedirectPayload model.RedirectTraceRequest
+	if DecodeError := json.NewDecoder(Request.Body).Decode(&RedirectPayload); DecodeError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Invalid Request Body")
+		return
+	}
+
+	if RedirectPayload.TargetUrl == "" {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Target Url Is Required")
+		return
+	}
+
+	RedirectResult, RedirectError := Handler.RedirectTraceService.TraceRedirects(RedirectPayload.TargetUrl)
+	if RedirectError != nil {
+		WriteJsonError(ResponseWriter, http.StatusBadRequest, "Redirect Trace Failed: "+RedirectError.Error())
+		return
+	}
+
+	WriteJsonSuccess(ResponseWriter, RedirectResult)
 }
 
 func GenerateRequestId() string {

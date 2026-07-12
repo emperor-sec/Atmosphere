@@ -228,3 +228,92 @@ type PingResult struct {
 	AvgLatencyMs int64         `json:"AvgLatencyMs"`
 	PacketLoss   float64       `json:"PacketLoss"`
 }
+
+type TechDetectRequest struct {
+	TargetUrl string `json:"TargetUrl"`
+}
+
+type TechDetectEntry struct {
+	Name     string `json:"Name"`
+	Category string `json:"Category"`
+}
+
+type TechDetectResult struct {
+	Url             string            `json:"Url"`
+	DetectedEntries []TechDetectEntry `json:"DetectedEntries"`
+	ServerHeader    string            `json:"ServerHeader"`
+	PoweredByHeader string            `json:"PoweredByHeader"`
+}
+
+type BlacklistRequest struct {
+	TargetIp string `json:"TargetIp"`
+}
+
+type BlacklistEntry struct {
+	ZoneName string `json:"ZoneName"`
+	IsListed bool   `json:"IsListed"`
+}
+
+type BlacklistResult struct {
+	Ip           string           `json:"Ip"`
+	Entries      []BlacklistEntry `json:"Entries"`
+	ListedCount  int              `json:"ListedCount"`
+	TotalChecked int              `json:"TotalChecked"`
+}
+
+type PreviewRequest struct {
+	TargetUrl string `json:"TargetUrl"`
+}
+
+type PreviewResult struct {
+	Url             string `json:"Url"`
+	PageTitle       string `json:"PageTitle"`
+	OgTitle         string `json:"OgTitle"`
+	OgSiteName      string `json:"OgSiteName"`
+	Description     string `json:"Description"`
+	PreviewImageUrl string `json:"PreviewImageUrl"`
+	FaviconUrl      string `json:"FaviconUrl"`
+	ThemeColor      string `json:"ThemeColor"`
+}
+
+type SubdomainRequest struct {
+	TargetDomain string `json:"TargetDomain"`
+}
+
+type SubdomainResult struct {
+	Domain          string   `json:"Domain"`
+	Subdomains      []string `json:"Subdomains"`
+	TotalDiscovered int      `json:"TotalDiscovered"`
+}
+
+type FaviconRequest struct {
+	TargetUrl string `json:"TargetUrl"`
+}
+
+type FaviconResult struct {
+	Url            string `json:"Url"`
+	FaviconUrl     string `json:"FaviconUrl"`
+	Md5Hash        string `json:"Md5Hash"`
+	Mmh3Hash       int32  `json:"Mmh3Hash"`
+	SizeBytes      int    `json:"SizeBytes"`
+	ShodanQueryUrl string `json:"ShodanQueryUrl"`
+}
+
+type RedirectTraceRequest struct {
+	TargetUrl string `json:"TargetUrl"`
+}
+
+type RedirectHop struct {
+	HopNumber      int    `json:"HopNumber"`
+	Url            string `json:"Url"`
+	StatusCode     int    `json:"StatusCode"`
+	LocationHeader string `json:"LocationHeader"`
+	ResponseTimeMs int64  `json:"ResponseTimeMs"`
+}
+
+type RedirectTraceResult struct {
+	OriginalUrl string        `json:"OriginalUrl"`
+	FinalUrl    string        `json:"FinalUrl"`
+	TotalHops   int           `json:"TotalHops"`
+	Hops        []RedirectHop `json:"Hops"`
+}

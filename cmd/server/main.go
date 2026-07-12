@@ -22,8 +22,17 @@ func main() {
 	SslCheckService := service.NewSslCheckService()
 	WhoisService := service.NewWhoisService()
 	HeaderInspectService := service.NewHeaderInspectService()
+	TechDetectService := service.NewTechDetectService()
+	BlacklistService := service.NewBlacklistService()
+	PreviewService := service.NewPreviewService()
+	SubdomainService := service.NewSubdomainService()
+	FaviconService := service.NewFaviconService()
+	RedirectTraceService := service.NewRedirectTraceService()
 
-	ApiHandlerInstance := handler.NewApiHandler(GeoService, UserAgentService, DnsService, SslCheckService, WhoisService, HeaderInspectService)
+	ApiHandlerInstance := handler.NewApiHandler(
+		GeoService, UserAgentService, DnsService, SslCheckService, WhoisService, HeaderInspectService,
+		TechDetectService, BlacklistService, PreviewService, SubdomainService, FaviconService, RedirectTraceService,
+	)
 
 	PageHandlerInstance, TemplateError := handler.NewPageHandler("web/templates/index.html")
 	if TemplateError != nil {
@@ -43,6 +52,12 @@ func main() {
 	Router.HandleFunc("/api/header-inspect", ApiHandlerInstance.HandleHeaderInspect)
 	Router.HandleFunc("/api/dns-records", ApiHandlerInstance.HandleDnsRecords)
 	Router.HandleFunc("/api/ping", ApiHandlerInstance.HandlePing)
+	Router.HandleFunc("/api/tech-detect", ApiHandlerInstance.HandleTechDetect)
+	Router.HandleFunc("/api/blacklist-check", ApiHandlerInstance.HandleBlacklistCheck)
+	Router.HandleFunc("/api/preview", ApiHandlerInstance.HandlePreview)
+	Router.HandleFunc("/api/subdomain-enum", ApiHandlerInstance.HandleSubdomainEnum)
+	Router.HandleFunc("/api/favicon-lookup", ApiHandlerInstance.HandleFaviconLookup)
+	Router.HandleFunc("/api/redirect-trace", ApiHandlerInstance.HandleRedirectTrace)
 
 	StaticFileServer := http.FileServer(http.Dir("web/static"))
 	Router.Handle("/static/", middleware.NoCacheStatic(http.StripPrefix("/static/", StaticFileServer)))
